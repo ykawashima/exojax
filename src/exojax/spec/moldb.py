@@ -147,7 +147,37 @@ class MdbExomol(object):
                 trans["nu_lines"]=self.nu_lines
                 trans["Sij0"]=self.Sij0
                 key="all_nurange"
+#                trans.to_hdf(self.trans_file.with_suffix(".hdf"), key=key, format="table", data_columns=True)
+
+                import time
+                from sys import getsizeof
+                start=time.perf_counter()
                 trans.to_hdf(self.trans_file.with_suffix(".hdf"), key=key, format="table", data_columns=True)
+                end=time.perf_counter()
+                print("pd=>hdf", end-start)
+
+                start=time.perf_counter()
+                trans1=pd.read_hdf(self.trans_file.with_suffix(".hdf"), where=where)
+                end=time.perf_counter()
+                print("hdf=>pd", end-start, getsizeof(trans1))
+
+                import vaex
+                start=time.perf_counter()
+                trans=vaex.from_pandas(trans)
+                trans.export(self.trans_file.with_suffix(".hdf5"))
+                end=time.perf_counter()
+                print("pd=>vaex=>hdf", end-start)
+
+                start=time.perf_counter()
+                trans=vaex.open(self.trans_file.with_suffix(".hdf5"))
+                if np.isneginf(self.crit):
+                    trans.select((trans.nu_lines>nu_lines_min) & (trans.nu_lines<nu_lines_max))
+                else:
+                    trans.select((trans.nu_lines>nu_lines_min) & (trans.nu_lines<nu_lines_max) & (trans.Sij0>self.crit))
+                trans1=trans.to_pandas_df(selection=True)
+                end=time.perf_counter()
+                print("hdf=>vaex=>pd", end-start, getsizeof(trans), getsizeof(trans1))
+
                 del trans
         else:
             imin=np.searchsorted(numinf,self.nurange[0],side="right")-1 #left side
@@ -207,7 +237,38 @@ class MdbExomol(object):
 
                 if not trans_file.with_suffix(".hdf").exists():
                     key=("nurange"+"__"+numtag[i]).replace("-","_")
+#                    trans.to_hdf(trans_file.with_suffix(".hdf"), key=key, format="table", data_columns=True)
+
+                    import time
+                    from sys import getsizeof
+                    start=time.perf_counter()
                     trans.to_hdf(trans_file.with_suffix(".hdf"), key=key, format="table", data_columns=True)
+                    end=time.perf_counter()
+                    print("pd=>hdf", end-start)
+
+                    start=time.perf_counter()
+                    trans1=pd.read_hdf(trans_file.with_suffix(".hdf"), where=where)
+                    end=time.perf_counter()
+                    print("hdf=>pd", end-start, getsizeof(trans1))
+
+                    import vaex
+                    start=time.perf_counter()
+                    trans=vaex.from_pandas(trans)
+                    trans.export(trans_file.with_suffix(".hdf5"))
+                    end=time.perf_counter()
+                    print("pd=>vaex=>hdf", end-start)
+
+                    start=time.perf_counter()
+                    trans=vaex.open(trans_file.with_suffix(".hdf5"))
+                    print(getsizeof(trans))
+                    if np.isneginf(self.crit):
+                        trans.select((trans.nu_lines>nu_lines_min) & (trans.nu_lines<nu_lines_max))
+                    else:
+                        trans.select((trans.nu_lines>nu_lines_min) & (trans.nu_lines<nu_lines_max) & (trans.Sij0>self.crit))
+                    trans1=trans.to_pandas_df(selection=True)
+                    end=time.perf_counter()
+                    print("hdf=>vaex=>pd", end-start, getsizeof(trans), getsizeof(trans1))
+
                     del trans
         
         ### MASKING ###

@@ -124,11 +124,102 @@ def read_trans(transf):
         transition data in pandas DataFrame
 
     """
-    try:
-        dat = pd.read_csv(transf,compression="bz2",sep="\s+",names=("i_upper","i_lower","A","nu_lines"))
-    except:
-        dat = pd.read_csv(transf,sep="\s+",names=("i_upper","i_lower","A","nu_lines"))
+#    where
 
+    
+    import time
+    from sys import getsizeof
+    import vaex
+    import psutil
+    print("====================")
+    
+    # start1=time.perf_counter()
+    # try:
+    #     pd1 = pd.read_csv(transf,compression="bz2",sep="\s+",names=("i_upper","i_lower","A","nu_lines"))
+    # except:
+    #     pd1 = pd.read_csv(transf,sep="\s+",names=("i_upper","i_lower","A","nu_lines"))
+    # nm1=pd1.to_numpy()
+    # end=time.perf_counter()
+    # print("read, bz2=>pd=>numpy", end-start1, "[s]")
+    
+    # start=time.perf_counter()
+    # pd1.to_hdf("/home/kawashima/database/pd.hdf", key="test", format="table", data_columns=True)
+    # end1=time.perf_counter()
+    # print("save, pd=>hdf5", end1-start, "[s]")
+    # print("Total:", end1-start1, "[s] for 1st")
+    # mem = psutil.virtual_memory() 
+    # print("Used memory [%]:", mem.percent)
+    # print("--------------------")
+    
+    # start=time.perf_counter()
+    # pd2=pd.read_hdf("/home/kawashima/database/pd.hdf")
+    # end=time.perf_counter()
+    # print("read, hdf5=>pd", end-start, "[s]")
+    # print("Total:", end-start, "[s] for 2nd")    
+    # mem = psutil.virtual_memory() 
+    # print("Used memory [%]:", mem.percent)
+    # print("====================")
+    # exit()
+
+    
+    # start1=time.perf_counter()
+    # try:
+    #     pd1 = pd.read_csv(transf,compression="bz2",sep="\s+",names=("i_upper","i_lower","A","nu_lines"))
+    # except:
+    #     pd1 = pd.read_csv(transf,sep="\s+",names=("i_upper","i_lower","A","nu_lines"))
+    # nm1=pd1.to_numpy()
+    # end=time.perf_counter()
+    # print("read, bz2=>pd=>numpy", end-start1, "[s]")
+    
+    # start=time.perf_counter()
+    # pd1.to_feather("/home/kawashima/database/pd.feather")
+    # end1=time.perf_counter()
+    # print("save, pd=>feather", end1-start, "[s]")
+    # print("Total:", end1-start1, "[s] for 1st")
+    # mem = psutil.virtual_memory() 
+    # print("Used memory [%]:", mem.percent)
+    # print("--------------------")
+    # exit()
+    
+    start=time.perf_counter()
+    pd2=pd.read_feather("/home/kawashima/database/pd.feather")
+    end=time.perf_counter()
+    print("read, feather=>pd", end-start, "[s]")
+    print("Total:", end-start, "[s] for 2nd")    
+    mem = psutil.virtual_memory() 
+    print("Used memory [%]:", mem.percent)
+    print("====================")
+    exit()
+
+    
+    
+    # start1=time.perf_counter()
+    # vx3=vaex.from_csv(transf,compression="bz2",sep="\s+",names=("i_upper","i_lower","A","nu_lines"))
+    # nm2=vaex.array_types.to_numpy(vx3)
+    # end=time.perf_counter()
+    # print("read, bz2=>vaex=>numpy", end-start1, "[s]")
+
+    # start=time.perf_counter()
+    # vx3.export("/home/kawashima/database/vaex.hdf5")
+    # end1=time.perf_counter()
+    # print("save, vaex=>hdf5", end1-start, "[s]")
+    # print("Total:", end1-start1, "[s] for 1st")
+    # mem = psutil.virtual_memory() 
+    # print("Used memory [%]:", mem.percent)
+    # exit()
+    # print("--------------------")
+    
+    start=time.perf_counter()
+    vx4=vaex.open("/home/kawashima/database/vaex.hdf5")
+    nm3=vaex.array_types.to_numpy(vx4)
+    end=time.perf_counter()
+    print("read, hdf5=>vaex=>numpy", end-start, "[s]")
+    print("Total:", end-start, "[s] for 2nd")
+    mem = psutil.virtual_memory() 
+    print("Used memory [%]:", mem.percent)
+    print("====================")
+    exit()
+    
     return dat 
 
 def read_states(statesf):        

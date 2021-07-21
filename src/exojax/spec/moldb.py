@@ -168,6 +168,13 @@ class MdbExomol(object):
                 end=time.perf_counter()
                 print("pd=>vaex=>hdf", end-start)
 
+                import vaex
+                start=time.perf_counter()
+                trans=vaex.from_arrays(ndtrans)
+                trans.export(self.trans_file.with_suffix(".hdf5"))
+                end=time.perf_counter()
+                print("numpy array=>vaex=>hdf", end-start)
+
                 start=time.perf_counter()
                 trans=vaex.open(self.trans_file.with_suffix(".hdf5"))
                 if np.isneginf(self.crit):
@@ -257,6 +264,13 @@ class MdbExomol(object):
                     trans.export(trans_file.with_suffix(".hdf5"))
                     end=time.perf_counter()
                     print("pd=>vaex=>hdf", end-start)
+
+                    import vaex
+                    start=time.perf_counter()
+                    trans=vaex.from_arrays(ndtrans)
+                    trans.export(trans_file.with_suffix(".hdf5"))
+                    end=time.perf_counter()
+                    print("numpy array=>vaex=>hdf", end-start)
 
                     start=time.perf_counter()
                     trans=vaex.open(trans_file.with_suffix(".hdf5"))

@@ -109,6 +109,8 @@ def read_pf(pff):
     dat = pd.read_csv(pff,sep="\s+",names=("T","QT"))
     return dat
 
+#from memory_profiler import profile
+#@profile
 def read_trans(transf):
     """Exomol IO for a transition file
     Note:
@@ -131,6 +133,8 @@ def read_trans(transf):
     from sys import getsizeof
     import vaex
     import psutil
+    import gc
+    gc.collect()
     print("====================")
     
     # start1=time.perf_counter()
@@ -150,14 +154,23 @@ def read_trans(transf):
     # mem = psutil.virtual_memory() 
     # print("Used memory [%]:", mem.percent)
     # print("--------------------")
+    # exit()
     
+    where=[]
+    A_min=1.e-4
+    where.append("A>A_min")
+
     # start=time.perf_counter()
-    # pd2=pd.read_hdf("/home/kawashima/database/pd.hdf")
+    # # pd3=pd.read_hdf("/home/kawashima/database/pd.hdf")
+    # # print(len(pd3))
+    # # print(pd3)
+    # pd2=pd.read_hdf("/home/kawashima/database/pd.hdf", where=where)
     # end=time.perf_counter()
     # print("read, hdf5=>pd", end-start, "[s]")
     # print("Total:", end-start, "[s] for 2nd")    
     # mem = psutil.virtual_memory() 
     # print("Used memory [%]:", mem.percent)
+    # print(len(pd2))
     # print("====================")
     # exit()
 
@@ -181,15 +194,18 @@ def read_trans(transf):
     # print("--------------------")
     # exit()
     
-    start=time.perf_counter()
-    pd2=pd.read_feather("/home/kawashima/database/pd.feather")
-    end=time.perf_counter()
-    print("read, feather=>pd", end-start, "[s]")
-    print("Total:", end-start, "[s] for 2nd")    
-    mem = psutil.virtual_memory() 
-    print("Used memory [%]:", mem.percent)
-    print("====================")
-    exit()
+    # start=time.perf_counter()
+    # pd2=pd.read_feather("/home/kawashima/database/pd.feather")
+    # mask=(pd2.A>A_min)
+    # pd2=pd2[mask]
+    # end=time.perf_counter()
+    # print(len(pd2))
+    # print("read, feather=>pd", end-start, "[s]")
+    # print("Total:", end-start, "[s] for 2nd")    
+    # mem = psutil.virtual_memory() 
+    # print("Used memory [%]:", mem.percent)
+    # print("====================")
+    # exit()
 
     
     
@@ -198,6 +214,7 @@ def read_trans(transf):
     # nm2=vaex.array_types.to_numpy(vx3)
     # end=time.perf_counter()
     # print("read, bz2=>vaex=>numpy", end-start1, "[s]")
+    # print(len(nm2))
 
     # start=time.perf_counter()
     # vx3.export("/home/kawashima/database/vaex.hdf5")
@@ -208,15 +225,19 @@ def read_trans(transf):
     # print("Used memory [%]:", mem.percent)
     # exit()
     # print("--------------------")
-    
+
+#    A_min=1.e-4    
     start=time.perf_counter()
     vx4=vaex.open("/home/kawashima/database/vaex.hdf5")
-    nm3=vaex.array_types.to_numpy(vx4)
+    vx4.select((vx4.A>A_min))
+    pd5=vx4.to_pandas_df(selection=True)
+    nm6=pd5.to_numpy()
     end=time.perf_counter()
-    print("read, hdf5=>vaex=>numpy", end-start, "[s]")
+    print("read, hdf5=>vaex=>pd=>numpy", end-start, "[s]")
     print("Total:", end-start, "[s] for 2nd")
     mem = psutil.virtual_memory() 
     print("Used memory [%]:", mem.percent)
+    print(getsizeof(vx4), getsizeof(pd5), getsizeof(nm6))
     print("====================")
     exit()
     

@@ -2,7 +2,7 @@
 # coding: utf-8
 import arviz
 from jax import jit, vmap
-from exojax.spec.modit import setdgm_exomol
+from exojax.spec.modit import setdgm_hitran
 from numpyro.diagnostics import hpdi
 from numpyro.infer import Predictive
 from numpyro.infer import MCMC, NUTS
@@ -17,7 +17,7 @@ import jax.numpy as jnp
 from exojax.spec import rtransfer as rt
 from exojax.spec import dit, modit
 from exojax.spec import moldb, contdb
-from exojax.spec.exomol import gamma_exomol
+from exojax.spec.hitran import gamma_hitran
 from exojax.spec import gamma_natural
 from exojax.spec.hitran import SijT
 from exojax.spec.dit import npgetix
@@ -58,7 +58,8 @@ vmrH2 = (mmrH2*mmw/molmassH2)  # VMR
 
 #
 Mp = 33.2
-mdbCH4 = moldb.MdbExomol('.database/CH4/12C-1H4/YT10to10/', nus, crit=1.e-30)
+# mdbCH4 = moldb.MdbHit('.database/CH4/06_HITEMP2020/06_HITEMP2020.par.bz2', nus, crit=1.e-30)
+mdbCH4 = moldb.MdbHit('/home/kawashima/database/CH4/06_hit12.par', nus, crit=1.e-30)
 cdbH2H2 = contdb.CdbCIA('.database/H2-H2_2011.cia', nus)
 print('N=', len(mdbCH4.nu_lines))
 
@@ -77,18 +78,18 @@ cnu, indexnu, R, pmarray = initspec.init_modit(mdbCH4.nu_lines, nus)
 def fT(T0, alpha): return T0[:, None]*(Parr[None, :]/Pref)**alpha[:, None]
 
 
-T0_test = np.array([1100.0, 1500.0, 1100.0, 1500.0])
+T0_test = np.array([1100.0, 1350.0, 1100.0, 1350.0])
 alpha_test = np.array([0.2, 0.2, 0.05, 0.05])
 res = 0.2
-dgm_ngammaL = setdgm_exomol(
-    mdbCH4, fT, Parr, R, molmassCH4, res, T0_test, alpha_test)
+dgm_ngammaL = setdgm_hitran(
+    mdbCH4, fT, Parr, Parr*1.e-4, R, molmassCH4, res, T0_test, alpha_test)
 
 # check dgm
 if False:
     from exojax.plot.ditplot import plot_dgmn
     Tarr = 1300.*(Parr/Pref)**0.1
-    SijM_CH4, ngammaLM_CH4, nsigmaDl_CH4 = modit.exomol(
-        mdbCH4, Tarr, Parr, R, molmassCH4)
+    SijM_CH4, ngammaLM_CH4, nsigmaDl_CH4 = modit.hitran(
+        mdbCH4, Tarr, Parr, Parr*1.e-4, R, molmassCH4)
     plot_dgmn(Parr, dgm_ngammaL, ngammaLM_CH4, 0, 6)
     plt.show()
 
@@ -97,8 +98,9 @@ if False:
 
 def frun(Tarr, MMR_CH4, Mp, Rp, u1, u2, RV, vsini):
     g = 2478.57730044555*Mp/Rp**2
-    SijM_CH4, ngammaLM_CH4, nsigmaDl_CH4 = modit.exomol(
-        mdbCH4, Tarr, Parr, R, molmassCH4)
+    VMR_CH4 = MMR_CH4*mmw/MMR_CH4
+    SijM_CH4, ngammaLM_CH4, nsigmaDl_CH4 = modit.hitran(
+        mdbCH4, Tarr, Parr, Parr*VMR_CH4, R, molmassCH4)
     xsm_CH4 = modit.xsmatrix(
         cnu, indexnu, R, pmarray, nsigmaDl_CH4, ngammaLM_CH4, SijM_CH4, nus, dgm_ngammaL)
     # abs is used to remove negative values in xsv
@@ -129,7 +131,7 @@ def model_c(nu1, y1):
     Rp = numpyro.sample('Rp', dist.Uniform(0.4, 1.2))
     RV = numpyro.sample('RV', dist.Uniform(5.0, 15.0))
     MMR_CH4 = numpyro.sample('MMR_CH4', dist.Uniform(0.0, 0.015))
-    T0 = numpyro.sample('T0', dist.Uniform(1000.0, 1500.0))
+    T0 = numpyro.sample('T0', dist.Uniform(1000.0, 1350.0))
     alpha = numpyro.sample('alpha', dist.Uniform(0.05, 0.2))
     vsini = numpyro.sample('vsini', dist.Uniform(15.0, 25.0))
     g = 2478.57730044555*Mp/Rp**2  # gravity

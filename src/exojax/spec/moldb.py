@@ -525,7 +525,15 @@ class MdbHit(object):
 
         self.logsij0 = jnp.array(np.log(self.Sij0))
         self.elower = jnp.array(self._elower)
+
+        # get pf
+        self.gQT, self.T_gQT = hitranapi.get_pf(self.molecid, self.uniqiso)
+        self.QTref = np.array(self.QT_interp(self.Tref))
         self.QTtyp = self.Qr_layer_HAPI([self.Ttyp])[0]
+        print(self.Ttyp)
+        print(self.QTtyp)
+        self.QTtyp = np.array(self.QT_interp(self.Ttyp))
+        print(self.QTtyp)
         self.Sij_typ = SijT(self.Ttyp, self.logsij0,
                             self.nu_lines, self.elower, self.QTtyp)
 
@@ -725,7 +733,10 @@ class MdbHit(object):
         Returns:
            Q(T) interpolated in jnp.array
         """
-        return jnp.interp(T, self.T_gQT, self.gQT)
+        QT = []
+        for idx, iso in enumerate(self.uniqiso):
+            QT.append(jnp.interp(T, self.T_gQT[idx], self.gQT[idx]))
+        return QT
 
     def qr_interp(self, T):
         """interpolated partition function ratio.
@@ -736,6 +747,8 @@ class MdbHit(object):
         Returns:
            qr(T)=Q(T)/Q(Tref) interpolated in jnp.array
         """
+        print(self.QT_interp(T)/self.QT_interp(self.Tref))
+        exit()
         return self.QT_interp(T)/self.QT_interp(self.Tref)
 
     def Qr_HAPI(self, Tarr):
@@ -797,6 +810,8 @@ class MdbHit(object):
             mask = self.isoid == iso
             for ilayer in range(NP):
                 qt[ilayer, mask] = qr[ilayer, idx]
+        print(np.shape(qt))
+        print(NP, self.uniqiso, self.isoid)
         return qt
 
 

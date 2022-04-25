@@ -528,8 +528,7 @@ class MdbHit(object):
 
         # get pf
         self.gQT, self.T_gQT = hitranapi.get_pf(self.molecid, self.uniqiso)
-        self.QTref = np.array(self.QT_HAPI(self.Tref))
-        self.QTtyp = np.array(self.QT_HAPI(self.Ttyp))
+        self.QTtyp = self.Qr_layer_HAPI([self.Ttyp])[0]
         self.Sij_typ = SijT(self.Ttyp, self.logsij0,
                             self.nu_lines, self.elower, self.QTtyp)
 
@@ -741,9 +740,6 @@ class MdbHit(object):
            Q(T) interpolated in jnp.array
         """
         QT = []
-        print(Tarr)
-        Tarr = list([Tarr])
-        print(Tarr)
         for T in Tarr:
             QT.append(jnp.interp(T, self.T_gQT[idx], self.gQT[idx]))
         return QT
@@ -789,8 +785,12 @@ class MdbHit(object):
         Qrx = []
         for idx, iso in enumerate(self.uniqiso):
             print(hapi.partitionSum(self.molecid, iso, allT))
-            print(QT_interp_layer(idx, allT))
-            Qrx.append(QT_interp_layer(idx, allT))
+            print(self.QT_interp_layer(idx, allT))
+            for i in range(len(self.T_gQT[idx])):
+                print(self.T_gQT[idx][i], self.gQT[idx][i])
+            print(allT)
+            exit()
+            Qrx.append(self.QT_interp_layer(idx, allT))
         Qrx = np.array(Qrx)
         qr = Qrx[:, 1:].T/Qrx[:, 0]  # Q(T)/Q(Tref)
         return qr

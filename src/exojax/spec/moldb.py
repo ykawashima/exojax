@@ -528,12 +528,8 @@ class MdbHit(object):
 
         # get pf
         self.gQT, self.T_gQT = hitranapi.get_pf(self.molecid, self.uniqiso)
-        self.QTref = np.array(self.QT_interp(self.Tref))
-        self.QTtyp = self.Qr_layer_HAPI([self.Ttyp])[0]
-        print(self.Ttyp)
-        print(self.QTtyp)
-        self.QTtyp = np.array(self.QT_interp(self.Ttyp))
-        print(self.QTtyp)
+        self.QTref = np.array(self.QT_HAPI(self.Tref))
+        self.QTtyp = np.array(self.QT_HAPI(self.Ttyp))
         self.Sij_typ = SijT(self.Ttyp, self.logsij0,
                             self.nu_lines, self.elower, self.QTtyp)
 
@@ -745,6 +741,9 @@ class MdbHit(object):
            Q(T) interpolated in jnp.array
         """
         QT = []
+        print(Tarr)
+        Tarr = list([Tarr])
+        print(Tarr)
         for T in Tarr:
             QT.append(jnp.interp(T, self.T_gQT[idx], self.gQT[idx]))
         return QT
@@ -795,6 +794,24 @@ class MdbHit(object):
         Qrx = np.array(Qrx)
         qr = Qrx[:, 1:].T/Qrx[:, 0]  # Q(T)/Q(Tref)
         return qr
+
+    def QT_HAPI(self, Tarr):
+        """Partition Function ratio using HAPI partition sum.
+
+        Args:
+           Tarr: temperature array (K)
+
+        Returns:
+           Qr = partition function ratio array [N_Tarr x N_iso]
+
+        Note:
+           N_Tarr = len(Tarr), N_iso = len(self.uniqiso)
+        """
+        Qrx = []
+        for idx, iso in enumerate(self.uniqiso):
+            Qrx.append(self.QT_interp_layer(idx, Tarr))
+        Qrx = np.array(Qrx)
+        return Qrx
 
     def Qr_line_HAPI(self, T):
         """Partition Function ratio using HAPI partition sum.

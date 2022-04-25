@@ -724,7 +724,18 @@ class MdbHit(object):
         except:
             print("Error: Couldn't download "+ext+' file and save.')
 
-    def QT_interp(self, T):
+    def QT_interp(self, idx, T):
+        """interpolated partition function.
+
+        Args:
+           T: temperature
+
+        Returns:
+           Q(T) interpolated in jnp.array
+        """
+        return jnp.interp(T, self.T_gQT[idx], self.gQT[idx])
+
+    def QT_interp_layer(self, idx, Tarr):
         """interpolated partition function.
 
         Args:
@@ -734,11 +745,11 @@ class MdbHit(object):
            Q(T) interpolated in jnp.array
         """
         QT = []
-        for idx, iso in enumerate(self.uniqiso):
+        for T in Tarr:
             QT.append(jnp.interp(T, self.T_gQT[idx], self.gQT[idx]))
         return QT
 
-    def qr_interp(self, T):
+    def qr_interp(self, idx, T):
         """interpolated partition function ratio.
 
         Args:
@@ -747,9 +758,21 @@ class MdbHit(object):
         Returns:
            qr(T)=Q(T)/Q(Tref) interpolated in jnp.array
         """
-        print(self.QT_interp(T)/self.QT_interp(self.Tref))
-        exit()
-        return self.QT_interp(T)/self.QT_interp(self.Tref)
+        return self.QT_interp(idx, T)/self.QT_interp(idx, self.Tref)
+
+    def qr_interp_layer(self, idx, Tarr):
+        """interpolated partition function ratio.
+
+        Args:
+           T: temperature
+
+        Returns:
+           qr(T)=Q(T)/Q(Tref) interpolated in jnp.array
+        """
+        QR = []
+        for T in Tarr:
+            QR.append(self.qr_interp(idx, T)/self.qr_interp(idx, self.Tref))
+        return QR
 
     def Qr_HAPI(self, Tarr):
         """Partition Function ratio using HAPI partition sum.
@@ -765,8 +788,10 @@ class MdbHit(object):
         """
         allT = list(np.concatenate([[self.Tref], Tarr]))
         Qrx = []
-        for iso in self.uniqiso:
-            Qrx.append(hapi.partitionSum(self.molecid, iso, allT))
+        for idx, iso in enumerate(self.uniqiso):
+            print(hapi.partitionSum(self.molecid, iso, allT))
+            print(QT_interp_layer(idx, allT))
+            Qrx.append(QT_interp_layer(idx, allT))
         Qrx = np.array(Qrx)
         qr = Qrx[:, 1:].T/Qrx[:, 0]  # Q(T)/Q(Tref)
         return qr
@@ -810,8 +835,6 @@ class MdbHit(object):
             mask = self.isoid == iso
             for ilayer in range(NP):
                 qt[ilayer, mask] = qr[ilayer, idx]
-        print(np.shape(qt))
-        print(NP, self.uniqiso, self.isoid)
         return qt
 
 

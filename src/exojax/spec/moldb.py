@@ -525,6 +525,9 @@ class MdbHit(object):
 
         self.logsij0 = jnp.array(np.log(self.Sij0))
         self.elower = jnp.array(self._elower)
+
+        # get pf
+        self.gQT, self.T_gQT, self.len_idx_gQT = hitranapi.get_pf(self.molecid, self.uniqiso)
         self.QTtyp = self.Qr_layer_HAPI([self.Ttyp])[0]
         self.Sij_typ = SijT(self.Ttyp, self.logsij0,
                             self.nu_lines, self.elower, self.QTtyp)
@@ -716,16 +719,34 @@ class MdbHit(object):
         except:
             print("Error: Couldn't download "+ext+' file and save.')
 
-    def QT_interp(self, T):
+    def QT_interp(self, idx, T):
         """interpolated partition function.
 
         Args:
+           idx: index for HITRAN isotopologue number
            T: temperature
 
         Returns:
-           Q(T) interpolated in jnp.array
+           Q(idx, T) interpolated in jnp.array
         """
-        return jnp.interp(T, self.T_gQT, self.gQT)
+        i_idx = sum(self.len_idx_gQT[0:idx]) # minimum index for isotopologue idx
+        i_idxp = sum(self.len_idx_gQT[0:idx+1]) # minimum index for isotopologue idx+1
+        return jnp.interp(T, self.T_gQT[i_idx:i_idxp], self.gQT[i_idx:i_idxp])
+
+    def QT_interp_layer(self, idx, Tarr):
+        """interpolated partition function.
+
+        Args:
+           idx: index for HITRAN isotopologue number
+           Tarr: temperature array (K)
+
+        Returns:
+           QT = partition function array for idx and Tarr [N_arr]
+        """
+        QT = []
+        for T in Tarr:
+            QT.append(self.QT_interp(idx, T))
+        return QT
 
     def qr_interp(self, T):
         """interpolated partition function ratio.
@@ -752,8 +773,8 @@ class MdbHit(object):
         """
         allT = list(np.concatenate([[self.Tref], Tarr]))
         Qrx = []
-        for iso in self.uniqiso:
-            Qrx.append(hapi.partitionSum(self.molecid, iso, allT))
+        for idx, iso in enumerate(self.uniqiso):
+            Qrx.append(self.QT_interp_layer(idx, allT))
         Qrx = np.array(Qrx)
         qr = Qrx[:, 1:].T/Qrx[:, 0]  # Q(T)/Q(Tref)
         return qr

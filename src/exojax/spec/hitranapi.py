@@ -1,5 +1,7 @@
 """API for HITRAN and HITEMP outside HAPI."""
 import numpy as np
+import jax.numpy as jnp
+from exojax.spec import hapi
 
 
 def read_path(path):
@@ -98,6 +100,28 @@ def extract_hitemp(parbz2, nurange, margin, tag):
     alllines.close()
     f.close()
     return outpath
+
+
+def get_pf(M, I_list):
+    """HITRAN/HITEMP IO for partition function
+
+    Args:
+        M: HITRAN molecule number
+        I_list: HITRAN isotopologue number list
+
+    Returns:
+        gQT: jnp array of partition function grid
+        T_gQT: jnp array of temperature grid for gQT
+        len_idx_gQT: data length for each isotopologue
+    """
+    gQT = []
+    T_gQT = []
+    len_idx_gQT = []
+    for I in I_list:
+        gQT.extend(hapi.TIPS_2017_ISOQ_HASH[(M, I)])
+        T_gQT.extend(hapi.TIPS_2017_ISOT_HASH[(M, I)])
+        len_idx_gQT.append(len(hapi.TIPS_2017_ISOQ_HASH[(M, I)]))
+    return jnp.array(gQT), jnp.array(T_gQT), len_idx_gQT
 
 
 if __name__ == '__main__':

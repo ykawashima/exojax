@@ -743,9 +743,17 @@ class MdbHit(object):
         Returns:
            QT = partition function array for idx and Tarr [N_arr]
         """
+        from jax import jit, vmap
         QT = []
+        print(Tarr)
         for T in Tarr:
             QT.append(self.QT_interp(idx, T))
+        print(QT)
+#        test = vmap(self.QT_interp)(idx, Tarr)
+        print(idx, Tarr)
+        print(np.shape(idx), np.shape(Tarr))
+        test = jit(vmap(self.QT_interp, (None, 0)))(idx, Tarr)
+        print(test)
         return QT
 
     def qr_interp(self, T):
@@ -771,18 +779,17 @@ class MdbHit(object):
         Note:
            N_Tarr = len(Tarr), N_iso = len(self.uniqiso)
         """
-        print(self.Tref)
-        print(Tarr)
-        print(jnp.shape(self.Tref))
-        print(jnp.shape(Tarr))
-        T_list = jnp.concatenate([[self.Tref], Tarr])
-        allT = list(T_list)
-        # allT = list(jnp.concatenate(jnp.array([[self.Tref], Tarr])))
         Qrx = []
         for idx, iso in enumerate(self.uniqiso):
-            Qrx.append(self.QT_interp_layer(idx, allT))
+            Qrx.append(self.QT_interp_layer(idx, Tarr))
         Qrx = np.array(Qrx)
-        qr = Qrx[:, 1:].T/Qrx[:, 0]  # Q(T)/Q(Tref)
+
+        Qrx_ref = []
+        for idx, iso in enumerate(self.uniqiso):
+            Qrx_ref.append(self.QT_interp(idx, self.Tref))
+        Qrx_ref = np.array(Qrx_ref)
+
+        qr = Qrx[:, :].T/Qrx_ref[:]  # Q(T)/Q(Tref)
         return qr
 
     def Qr_line_HAPI(self, T):

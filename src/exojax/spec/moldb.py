@@ -771,7 +771,13 @@ class MdbHit(object):
         Note:
            N_Tarr = len(Tarr), N_iso = len(self.uniqiso)
         """
-        allT = list(np.concatenate([[self.Tref], Tarr]))
+        print(self.Tref)
+        print(Tarr)
+        print(jnp.shape(self.Tref))
+        print(jnp.shape(Tarr))
+        T_list = jnp.concatenate([[self.Tref], Tarr])
+        allT = list(T_list)
+        # allT = list(jnp.concatenate(jnp.array([[self.Tref], Tarr])))
         Qrx = []
         for idx, iso in enumerate(self.uniqiso):
             Qrx.append(self.QT_interp_layer(idx, allT))
@@ -811,7 +817,7 @@ class MdbHit(object):
            Nlines=len(self.nu_lines)
            N_Tarr=len(Tarr)
         """
-        NP = len(Tarr)
+        NP = jnp.size(Tarr)
         qt = np.zeros((NP, len(self.isoid)))
         qr = self.Qr_HAPI(Tarr)
         for idx, iso in enumerate(self.uniqiso):

@@ -311,7 +311,16 @@ def hitran(mdb, Tarr, Parr, Pself, R, molmass):
        normalized gammaL matrix,
        normalized sigmaD matrix
     """
-    qt = vmap(mdb.Qr_layer_HAPI)(Tarr)
+    # qt = mdb.Qr_layer_HAPI(Tarr)
+    
+       # i_idx = sum(self.len_idx_gQT[0:idx]) # minimum index for isotopologue idx                           
+        # i_idxp = sum(self.len_idx_gQT[0:idx+1]) # minimum index for isotopologue idx+1
+    i_idx = []
+    i_idxp = []
+    for idx, iso in enumerate(mdb.uniqiso):
+        i_idx.append(sum(mdb.len_idx_gQT[0:idx]))
+        i_idxp.append(sum(mdb.len_idx_gQT[0:idx+1]))
+    qt = jit(vmap(mdb.QT_interp, (None, None, 0)))(i_idx, i_idxp, Tarr)
     SijM = jit(vmap(SijT, (0, None, None, None, 0)))(
         Tarr, mdb.logsij0, mdb.dev_nu_lines, mdb.elower, qt)
     gammaLMP = jit(vmap(gamma_hitran, (0, 0, 0, None, None, None)))(

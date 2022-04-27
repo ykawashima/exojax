@@ -719,7 +719,7 @@ class MdbHit(object):
         except:
             print("Error: Couldn't download "+ext+' file and save.')
 
-    def QT_interp(self, idx, T):
+    def QT_interp(self, i_idx, i_idxp, T):
         """interpolated partition function.
 
         Args:
@@ -729,8 +729,8 @@ class MdbHit(object):
         Returns:
            Q(idx, T) interpolated in jnp.array
         """
-        i_idx = sum(self.len_idx_gQT[0:idx]) # minimum index for isotopologue idx
-        i_idxp = sum(self.len_idx_gQT[0:idx+1]) # minimum index for isotopologue idx+1
+        # i_idx = sum(self.len_idx_gQT[0:idx]) # minimum index for isotopologue idx
+        # i_idxp = sum(self.len_idx_gQT[0:idx+1]) # minimum index for isotopologue idx+1
         return jnp.interp(T, self.T_gQT[i_idx:i_idxp], self.gQT[i_idx:i_idxp])
 
     def QT_interp_layer(self, idx, Tarr):
@@ -743,9 +743,11 @@ class MdbHit(object):
         Returns:
            QT = partition function array for idx and Tarr [N_arr]
         """
+        i_idx = sum(self.len_idx_gQT[0:idx]) # minimum index for isotopologue idx
+        i_idxp = sum(self.len_idx_gQT[0:idx+1]) # minimum index for isotopologue idx+1
         QT = []
         for T in Tarr:
-            QT.append(self.QT_interp(idx, T))
+            QT.append(self.QT_interp(i_idx, i_idxp, T))
         return QT
 
     def qr_interp(self, T):
@@ -778,7 +780,9 @@ class MdbHit(object):
 
         Qrx_ref = []
         for idx, iso in enumerate(self.uniqiso):
-            Qrx_ref.append(self.QT_interp(idx, self.Tref))
+            i_idx = sum(self.len_idx_gQT[0:idx]) # minimum index for isotopologue idx
+            i_idxp = sum(self.len_idx_gQT[0:idx+1]) # minimum index for isotopologue idx+1
+            Qrx_ref.append(self.QT_interp(i_idx, i_idxp, self.Tref))
         Qrx_ref = np.array(Qrx_ref)
 
         qr = Qrx[:, :].T/Qrx_ref[:]  # Q(T)/Q(Tref)

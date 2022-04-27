@@ -743,17 +743,9 @@ class MdbHit(object):
         Returns:
            QT = partition function array for idx and Tarr [N_arr]
         """
-        from jax import jit, vmap
         QT = []
-        print(Tarr)
         for T in Tarr:
             QT.append(self.QT_interp(idx, T))
-        print(QT)
-#        test = vmap(self.QT_interp)(idx, Tarr)
-        print(idx, Tarr)
-        print(np.shape(idx), np.shape(Tarr))
-        test = jit(vmap(self.QT_interp, (None, 0)))(idx, Tarr)
-        print(test)
         return QT
 
     def qr_interp(self, T):
@@ -824,7 +816,7 @@ class MdbHit(object):
            Nlines=len(self.nu_lines)
            N_Tarr=len(Tarr)
         """
-        NP = jnp.size(Tarr)
+        NP = len(Tarr)
         qt = np.zeros((NP, len(self.isoid)))
         qr = self.Qr_HAPI(Tarr)
         for idx, iso in enumerate(self.uniqiso):

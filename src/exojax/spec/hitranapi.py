@@ -112,16 +112,25 @@ def get_pf(M, I_list):
     Returns:
         gQT: jnp array of partition function grid
         T_gQT: jnp array of temperature grid for gQT
-        len_idx_gQT: data length for each isotopologue
     """
     gQT = []
     T_gQT = []
-    len_idx_gQT = []
+    len_idx = []
     for I in I_list:
-        gQT.extend(hapi.TIPS_2017_ISOQ_HASH[(M, I)])
-        T_gQT.extend(hapi.TIPS_2017_ISOT_HASH[(M, I)])
-        len_idx_gQT.append(len(hapi.TIPS_2017_ISOQ_HASH[(M, I)]))
-    return jnp.array(gQT), jnp.array(T_gQT), len_idx_gQT
+        gQT.append(hapi.TIPS_2017_ISOQ_HASH[(M, I)])
+        T_gQT.append(hapi.TIPS_2017_ISOT_HASH[(M, I)])
+        len_idx.append(len(hapi.TIPS_2017_ISOQ_HASH[(M, I)]))
+
+    # pad gQT and T_gQT with the last element
+    len_max = np.max(len_idx)
+    for idx, iso in enumerate(I_list):
+        l_add = [gQT[idx][-1]] * (len_max - len(gQT[idx]))
+        gQT[idx] = np.append(gQT[idx], l_add)
+
+        l_add = [T_gQT[idx][-1]] * (len_max - len(T_gQT[idx]))
+        T_gQT[idx] = np.append(T_gQT[idx], l_add)
+
+    return jnp.array(gQT), jnp.array(T_gQT)
 
 
 if __name__ == '__main__':

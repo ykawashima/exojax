@@ -527,8 +527,7 @@ class MdbHit(object):
         self.elower = jnp.array(self._elower)
 
         # get pf
-        self.gQT, self.T_gQT = hitranapi.get_pf(self.molecid, self.uniqiso)
-        exit()
+        self.gQT, self.T_gQT, self.len_idx_gQT = hitranapi.get_pf(self.molecid, self.uniqiso)
         self.QTtyp = self.Qr_layer_HAPI([self.Ttyp])[0]
         self.Sij_typ = SijT(self.Ttyp, self.logsij0,
                             self.nu_lines, self.elower, self.QTtyp)
@@ -776,14 +775,15 @@ class MdbHit(object):
         """
         Qrx = []
         for idx, iso in enumerate(self.uniqiso):
+        """
+        i_idx = sum(self.len_idx_gQT[0:idx]) # minimum index for isotopologue idx                             
+        i_idxp = sum(self.len_idx_gQT[0:idx+1]) # minimum index for isotopologue idx+1                        
             Qrx.append(self.QT_interp_layer(idx, Tarr))
         Qrx = np.array(Qrx)
 
         Qrx_ref = []
         for idx, iso in enumerate(self.uniqiso):
-            i_idx = sum(self.len_idx_gQT[0:idx]) # minimum index for isotopologue idx
-            i_idxp = sum(self.len_idx_gQT[0:idx+1]) # minimum index for isotopologue idx+1
-            Qrx_ref.append(self.QT_interp(i_idx, i_idxp, self.Tref))
+            Qrx_ref.append(self.QT_interp(idx, self.Tref))
         Qrx_ref = np.array(Qrx_ref)
 
         qr = Qrx[:, :].T/Qrx_ref[:]  # Q(T)/Q(Tref)

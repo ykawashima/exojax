@@ -528,7 +528,6 @@ class MdbHit(object):
 
         # get pf
         self.gQT, self.T_gQT = hitranapi.get_pf(self.molecid, self.uniqiso)
-        exit()
         self.QTtyp = self.Qr_layer_HAPI([self.Ttyp])[0]
         self.Sij_typ = SijT(self.Ttyp, self.logsij0,
                             self.nu_lines, self.elower, self.QTtyp)
@@ -720,7 +719,7 @@ class MdbHit(object):
         except:
             print("Error: Couldn't download "+ext+' file and save.')
 
-    def QT_interp(self, i_idx, i_idxp, T):
+    def QT_interp(self, idx, T):
         """interpolated partition function.
 
         Args:
@@ -730,11 +729,10 @@ class MdbHit(object):
         Returns:
            Q(idx, T) interpolated in jnp.array
         """
-        # i_idx = sum(self.len_idx_gQT[0:idx]) # minimum index for isotopologue idx
-        # i_idxp = sum(self.len_idx_gQT[0:idx+1]) # minimum index for isotopologue idx+1
-        return jnp.interp(T, self.T_gQT[i_idx:i_idxp], self.gQT[i_idx:i_idxp])
+        return jnp.interp(T, self.T_gQT[idx], self.gQT[idx])
 
     def QT_interp_layer(self, idx, Tarr):
+        from jax import jit, vmap
         """interpolated partition function.
 
         Args:
@@ -744,14 +742,15 @@ class MdbHit(object):
         Returns:
            QT = partition function array for idx and Tarr [N_arr]
         """
-        i_idx = sum(self.len_idx_gQT[0:idx]) # minimum index for isotopologue idx
-        i_idxp = sum(self.len_idx_gQT[0:idx+1]) # minimum index for isotopologue idx+1
-        QT = []
-        for T in Tarr:
-            QT.append(self.QT_interp(i_idx, i_idxp, T))
+        print(idx, Tarr)
+        print(isinstance(Tarr, jnp.ndarray))
+        if(isinstance(Tarr, jnp.ndarray)):
+            QT = jit(vmap(self.QT_interp, (0, None)))(idx, Tarr)
+        else:
+            QT = self.QT_interp(idx, Tarr[0])
         return QT
 
-    def qr_interp(self, T):
+    def qr_interp(self, idx, T):
         """interpolated partition function ratio.
 
         Args:
@@ -760,7 +759,7 @@ class MdbHit(object):
         Returns:
            qr(T)=Q(T)/Q(Tref) interpolated in jnp.array
         """
-        return self.QT_interp(T)/self.QT_interp(self.Tref)
+        return self.QT_interp(idx, T)/self.QT_interp(idx, self.Tref)
 
     def Qr_HAPI(self, Tarr):
         """Partition Function ratio using HAPI partition sum.
@@ -781,12 +780,13 @@ class MdbHit(object):
 
         Qrx_ref = []
         for idx, iso in enumerate(self.uniqiso):
-            i_idx = sum(self.len_idx_gQT[0:idx]) # minimum index for isotopologue idx
-            i_idxp = sum(self.len_idx_gQT[0:idx+1]) # minimum index for isotopologue idx+1
-            Qrx_ref.append(self.QT_interp(i_idx, i_idxp, self.Tref))
+            Qrx_ref.append(self.QT_interp_layer(idx, [self.Tref]))
         Qrx_ref = np.array(Qrx_ref)
-
-        qr = Qrx[:, :].T/Qrx_ref[:]  # Q(T)/Q(Tref)
+        
+        if(len(Tarr) > 1):
+            qr = Qrx[:, :].T/Qrx_ref[:]  # Q(T)/Q(Tref)
+        else:
+            qr = Qrx[:].T/Qrx_ref[:]  # Q(T)/Q(Tref)
         return qr
 
     def Qr_line_HAPI(self, T):
@@ -801,11 +801,13 @@ class MdbHit(object):
         Note:
            Nlines=len(self.nu_lines)
         """
-        qr_line = np.ones_like(self.isoid, dtype=np.float64)
-        qrx = self.Qr_HAPI([T])
-        for idx, iso in enumerate(self.uniqiso):
-            mask = self.isoid == iso
-            qr_line[mask] = qrx[0, idx]
+        # qr_line = jnp.ones(len(self.isoid))
+        qr_line = []
+        for i in self.isoid:
+            qr_line.append(self.qr_interp(i, T))
+        # for idx, iso in enumerate(self.uniqiso):
+        #     mask = self.isoid == iso
+        #     qr_line[mask] = self.qr_interp(idx, T)
         return qr_line
 
     def Qr_layer_HAPI(self, Tarr):
@@ -826,8 +828,11 @@ class MdbHit(object):
         qr = self.Qr_HAPI(Tarr)
         for idx, iso in enumerate(self.uniqiso):
             mask = self.isoid == iso
-            for ilayer in range(NP):
-                qt[ilayer, mask] = qr[ilayer, idx]
+            if(NP > 1):
+                for ilayer in range(NP):
+                    qt[ilayer, mask] = qr[ilayer, idx]
+            else:
+                qt[0, mask] = qr[idx]
         return qt
 
 

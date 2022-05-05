@@ -761,6 +761,26 @@ class MdbHit(object):
         """
         return self.QT_interp(idx, T)/self.QT_interp(idx, self.Tref)
 
+    def Qr_HAPI_old(self, Tarr):
+        """Partition Function ratio using HAPI partition sum.
+
+        Args:
+           Tarr: temperature array (K)
+
+        Returns:
+           Qr = partition function ratio array [N_Tarr x N_iso]
+
+        Note:
+           N_Tarr = len(Tarr), N_iso = len(self.uniqiso)
+        """
+        allT = list(np.concatenate([[self.Tref], Tarr]))
+        Qrx = []
+        for iso in self.uniqiso:
+            Qrx.append(hapi.partitionSum(self.molecid, iso, allT))
+        Qrx = np.array(Qrx)
+        qr = Qrx[:, 1:].T/Qrx[:, 0]  # Q(T)/Q(Tref)
+        return qr
+
     def Qr_HAPI(self, Tarr):
         """Partition Function ratio using HAPI partition sum.
 
@@ -782,12 +802,31 @@ class MdbHit(object):
         for idx, iso in enumerate(self.uniqiso):
             Qrx_ref.append(self.QT_interp_layer(idx, [self.Tref]))
         Qrx_ref = np.array(Qrx_ref)
-        
+
         if(len(Tarr) > 1):
             qr = Qrx[:, :].T/Qrx_ref[:]  # Q(T)/Q(Tref)
         else:
             qr = Qrx[:].T/Qrx_ref[:]  # Q(T)/Q(Tref)
         return qr
+
+    def Qr_line_HAPI_old(self, T):
+        """Partition Function ratio using HAPI partition sum.
+
+        Args:
+           T: temperature (K)
+
+        Returns:
+           Qr_line, partition function ratio array for lines [Nlines]
+
+        Note:
+           Nlines=len(self.nu_lines)
+        """
+        qr_line = np.ones_like(self.isoid, dtype=np.float64)
+        qrx = self.Qr_HAPI_old([T])
+        for idx, iso in enumerate(self.uniqiso):
+            mask = self.isoid == iso
+            qr_line[mask] = qrx[0, idx]
+        return qr_line
 
     def Qr_line_HAPI(self, T):
         """Partition Function ratio using HAPI partition sum.
@@ -809,6 +848,28 @@ class MdbHit(object):
         #     mask = self.isoid == iso
         #     qr_line[mask] = self.qr_interp(idx, T)
         return qr_line
+
+    def Qr_layer_HAPI_old(self, Tarr):
+        """Partition Function ratio using HAPI partition sum.
+
+        Args:
+           Tarr: temperature array (K)
+
+        Returns:
+           Qr_layer, partition function ratio array for lines [N_Tarr x Nlines]
+
+        Note:
+           Nlines=len(self.nu_lines)
+           N_Tarr=len(Tarr)
+        """
+        NP = len(Tarr)
+        qt = np.zeros((NP, len(self.isoid)))
+        qr = self.Qr_HAPI_old(Tarr)
+        for idx, iso in enumerate(self.uniqiso):
+            mask = self.isoid == iso
+            for ilayer in range(NP):
+                qt[ilayer, mask] = qr[ilayer, idx]
+        return qt
 
     def Qr_layer_HAPI(self, Tarr):
         """Partition Function ratio using HAPI partition sum.

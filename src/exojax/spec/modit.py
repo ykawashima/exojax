@@ -311,8 +311,9 @@ def hitran(mdb, Tarr, Parr, Pself, R, molmass):
        normalized gammaL matrix,
        normalized sigmaD matrix
     """
+    # qtc=mdb.Qr_layer_HAPI_old(Tarr)
     qt = vmap(mdb.Qr_line_HAPI)(Tarr)
-    print(type(qt))
+    qt = jnp.array(qt).T
     SijM = jit(vmap(SijT, (0, None, None, None, 0)))(
         Tarr, mdb.logsij0, mdb.dev_nu_lines, mdb.elower, qt)
     gammaLMP = jit(vmap(gamma_hitran, (0, 0, 0, None, None, None)))(
